@@ -39,7 +39,7 @@ void common_hal_rotaryio_incrementalencoder_construct(rotaryio_incrementalencode
         mp_raise_RuntimeError(translate("Both pins must support hardware interrupts"));
     }
 
-    // TODO: The SAMD51 has a peripheral dedicated to quadrature encoder debugging. Use it instead
+    // TODO: The SAMD51 has a peripheral dedicated to quadrature encoder de. Use it instead
     // of the external interrupt.
 
     if (eic_get_enable()) {
@@ -155,17 +155,30 @@ void incrementalencoder_interrupt_handler(uint8_t channel) {
         (uint8_t) gpio_get_pin_level(self->pin_b);
 
     int8_t quarter_incr = transitions[self->last_state];
+    mp_printf(&mp_plat_print, "last_state: %d%d - %d%d, quarter_count: %d, quarter_incr: %d, position: %d\n",
+              (self->last_state & 0x8) >> 3,
+              (self->last_state & 0x4) >> 2,
+              (self->last_state & 0x2) >> 1,
+              self->last_state & 0x1,
+              self->quarter_count,
+              quarter_incr,
+              self->position);
+
     if (quarter_incr == BAD) {
         // Missed a transition. We don't know which way we're going, so do nothing.
         return;
     }
 
     self->quarter_count += quarter_incr;
-    if (self->quarter_count >= 4) {
+    if (self->quarter_count >= 3) {
         self->position += 1;
         self->quarter_count = 0;
-    } else if (self->quarter_count <= -4) {
+    } else if (self->quarter_count <= -3) {
         self->position -= 1;
         self->quarter_count = 0;
     }
+    mp_printf(&mp_plat_print, "  quarter_count: %d, position: %d\n",
+              self->quarter_count,
+              self->position);
+
 }
