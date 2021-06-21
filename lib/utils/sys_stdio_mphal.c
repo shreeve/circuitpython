@@ -89,6 +89,8 @@ STATIC mp_uint_t stdio_ioctl(mp_obj_t self_in, mp_uint_t request, uintptr_t arg,
     (void)self_in;
     if (request == MP_STREAM_POLL) {
         return mp_hal_stdio_poll(arg);
+    } else if (request == MP_STREAM_FLUSH) {
+        return mp_hal_stdio_flush(arg);
     } else {
         *errcode = MP_EINVAL;
         return MP_STREAM_ERROR;

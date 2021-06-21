@@ -100,6 +100,24 @@ bool serial_connected(void) {
     #endif
 }
 
+bool serial_flush(void) {
+    #if CIRCUITPY_USB_VENDOR
+    if (tud_vendor_connected()) {
+        // No flush actually available.
+        return true;
+    }
+    #endif
+
+    #if defined(DEBUG_UART_TX) && defined(DEBUG_UART_RX)
+    return true;
+    #elif CIRCUITPY_USB_CDC
+    if (!usb_cdc_console_enabled()) {
+        return false;
+    }
+    #endif
+    return tud_cdc_write_flush();
+}
+
 char serial_read(void) {
     #if CIRCUITPY_USB_VENDOR
     if (tud_vendor_connected() && tud_vendor_available() > 0) {

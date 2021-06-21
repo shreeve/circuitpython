@@ -68,6 +68,11 @@ void mp_hal_stdout_tx_strn(const char *str, size_t len) {
     serial_write_substring(str, len);
 }
 
+uintptr_t mp_hal_stdio_flush(uintptr_t unused) {
+    (void)unused;
+    return serial_flush() ? 0 : MP_STREAM_ERROR;
+}
+
 uintptr_t mp_hal_stdio_poll(uintptr_t poll_flags) {
     uintptr_t ret = 0;
     if ((poll_flags & MP_STREAM_POLL_RD) && serial_bytes_available()) {
