@@ -285,12 +285,24 @@ STATIC mp_obj_t task_iternext(mp_obj_t self_in) {
     return mp_const_none;
 }
 
+STATIC mp_obj_t task_await(mp_obj_t self_in, mp_obj_t iter_buf) {
+    return task_getiter(self_in, MP_OBJ_TO_PTR(iter_buf));
+}
+MP_DEFINE_CONST_FUN_OBJ_2(task_await_obj, task_await);
+
+
+STATIC const mp_rom_map_elem_t task_locals_dict_table[] = {
+    { MP_OBJ_NEW_QSTR(MP_QSTR___await__),     MP_ROM_PTR(&task_await_obj) },
+};
+STATIC MP_DEFINE_CONST_DICT(task_locals_dict, task_locals_dict_table);
+
 STATIC const mp_obj_type_t task_type = {
     { &mp_type_type },
     .flags = MP_TYPE_FLAG_EXTENDED,
     .name = MP_QSTR_Task,
     .make_new = task_make_new,
     .attr = task_attr,
+    .locals_dict = (mp_obj_dict_t *)&task_locals_dict,
     MP_TYPE_EXTENDED_FIELDS(
         .getiter = task_getiter,
         .iternext = task_iternext,
@@ -301,7 +313,11 @@ STATIC const mp_obj_type_t task_type = {
 // C-level uasyncio module
 
 STATIC const mp_rom_map_elem_t mp_module_uasyncio_globals_table[] = {
+    #if CIRCUITPY
+    { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR__asyncio) },
+    #else
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR__uasyncio) },
+    #endif
     { MP_ROM_QSTR(MP_QSTR_TaskQueue), MP_ROM_PTR(&task_queue_type) },
     { MP_ROM_QSTR(MP_QSTR_Task), MP_ROM_PTR(&task_type) },
 };
@@ -312,4 +328,5 @@ const mp_obj_module_t mp_module_uasyncio = {
     .globals = (mp_obj_dict_t *)&mp_module_uasyncio_globals,
 };
 
+MP_REGISTER_MODULE(MP_QSTR__asyncio, mp_module_uasyncio, MICROPY_PY_UASYNCIO);
 #endif // MICROPY_PY_UASYNCIO
