@@ -36,13 +36,12 @@ CFLAGS += -DCIRCUITPY_FULL_BUILD=$(CIRCUITPY_FULL_BUILD)
 MICROPY_PY_ASYNC_AWAIT ?= $(CIRCUITPY_FULL_BUILD)
 CFLAGS += -DMICROPY_PY_ASYNC_AWAIT=$(MICROPY_PY_ASYNC_AWAIT)
 
-# uasyncio
-# By default, include uasyncio if async/await are available.
-MICROPY_PY_UASYNCIO ?= $(MICROPY_PY_ASYNC_AWAIT)
+# _asyncio: C version of Task and TaskQueue
+# Not currently working, so turn off. Use Python version instead.
+MICROPY_PY_UASYNCIO ?= 0
 CFLAGS += -DMICROPY_PY_UASYNCIO=$(MICROPY_PY_UASYNCIO)
 
-# uasyncio normally needs select
-MICROPY_PY_USELECT ?= $(MICROPY_PY_UASYNCIO)
+MICROPY_PY_USELECT ?= $(MICROPY_PY_ASYNC_AWAIT)
 CFLAGS += -DMICROPY_PY_USELECT=$(MICROPY_PY_USELECT)
 
 # enable select.select if select is enabled.
