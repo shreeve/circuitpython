@@ -40,7 +40,14 @@
 
 #define MSC_FLASH_BLOCK_SIZE    512
 
-static bool ejected[1] = {true};
+#define LUN_COUNT 4
+
+static bool ejected[LUN_COUNT] = {true};
+
+// Invoked to determine max LUN
+uint8_t tud_msc_get_maxlun_cb(void) {
+    return LUN_COUNT;
+}
 
 // Lock to track if something else is using the filesystem when USB is plugged in. If so, the drive
 // will be made available once the lock is released.
@@ -98,17 +105,24 @@ void usb_msc_unlock(void) {
 static fs_user_mount_t *get_vfs(int lun) {
     // TODO(tannewt): Return the mount which matches the lun where 0 is the end
     // and is counted in reverse.
-    if (lun > 0) {
+    if (lun < 0 || lun >= LUN_COUNT) {
         return NULL;
     }
+
+    mp_vfs_mount_t *mounts[LUN_COUNT] = { NULL };
+    int last_mount_idx = -1;
     mp_vfs_mount_t *current_mount = MP_STATE_VM(vfs_mount_table);
-    if (current_mount == NULL) {
-        return NULL;
-    }
-    while (current_mount->next != NULL) {
+
+    while (current_mount != NULL) {
+        mounts[++last_mount_idx] = current_mount;
         current_mount = current_mount->next;
     }
-    return current_mount->obj;
+
+    if (last_mount_idx < lun) {
+        return NULL;
+    }
+
+    return mounts[last_mount_idx - lun]->obj;
 }
 
 // Callback invoked when received an SCSI command not in built-in list below
@@ -153,7 +167,7 @@ void tud_msc_capacity_cb(uint8_t lun, uint32_t *block_count, uint16_t *block_siz
 }
 
 bool tud_msc_is_writable_cb(uint8_t lun) {
-    if (lun > 1) {
+    if (lun >= LUN_COUNT) {
         return false;
     }
 
@@ -170,7 +184,6 @@ bool tud_msc_is_writable_cb(uint8_t lun) {
 // Callback invoked when received READ10 command.
 // Copy disk's data to buffer (up to bufsize) and return number of copied bytes.
 int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void *buffer, uint32_t bufsize) {
-    (void)lun;
     (void)offset;
 
     const uint32_t block_count = bufsize / MSC_FLASH_BLOCK_SIZE;
@@ -184,7 +197,6 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void *buff
 // Callback invoked when received WRITE10 command.
 // Process data in buffer to disk's storage and return number of written bytes
 int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t *buffer, uint32_t bufsize) {
-    (void)lun;
     (void)offset;
 
     const uint32_t block_count = bufsize / MSC_FLASH_BLOCK_SIZE;
@@ -232,20 +244,25 @@ void tud_msc_inquiry_cb(uint8_t lun, uint8_t vendor_id[8], uint8_t product_id[16
 // Invoked when received Test Unit Ready command.
 // return true allowing host to read/write this LUN e.g SD card inserted
 bool tud_msc_test_unit_ready_cb(uint8_t lun) {
-    if (lun > 1) {
+    mp_printf(&mp_plat_print, "test unit ready: %d  ", lun);
+    if (lun >= LUN_COUNT) {
         return false;
     }
 
     fs_user_mount_t *current_mount = get_vfs(lun);
     if (current_mount == NULL) {
+        mp_printf(&mp_plat_print, "NOT MOUNTED, NOT READY\n");
         return false;
     }
     if (ejected[lun]) {
         // Set 0x3a for media not present.
         tud_msc_set_sense(lun, SCSI_SENSE_NOT_READY, 0x3A, 0x00);
+        mp_printf(&mp_plat_print, "EJECTED, NOT READY\n");
+
         return false;
     }
 
+    mp_printf(&mp_plat_print, "READY\n");
     return true;
 }
 
@@ -253,7 +270,7 @@ bool tud_msc_test_unit_ready_cb(uint8_t lun) {
 // - Start = 0 : stopped power mode, if load_eject = 1 : unload disk storage
 // - Start = 1 : active mode, if load_eject = 1 : load disk storage
 bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, bool load_eject) {
-    if (lun > 1) {
+    if (lun >= LUN_COUNT) {
         return false;
     }
     fs_user_mount_t *current_mount = get_vfs(lun);
