@@ -41,6 +41,7 @@ mp_int_t common_hal_bleio_connection_get_max_packet_length(bleio_connection_inte
 bool common_hal_bleio_connection_get_paired(bleio_connection_obj_t *self);
 mp_obj_tuple_t *common_hal_bleio_connection_discover_remote_services(bleio_connection_obj_t *self, mp_obj_t service_uuids_whitelist);
 
+mp_obj_t common_hal_bleio_connection_get_address(bleio_connection_obj_t *self);
 mp_float_t common_hal_bleio_connection_get_connection_interval(bleio_connection_internal_t *self);
 void common_hal_bleio_connection_set_connection_interval(bleio_connection_internal_t *self, mp_float_t new_interval);
 

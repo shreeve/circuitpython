@@ -151,6 +151,25 @@ STATIC mp_obj_t bleio_connection_discover_remote_services(mp_uint_t n_args, cons
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(bleio_connection_discover_remote_services_obj, 1, bleio_connection_discover_remote_services);
 
+//|     address: Address
+//|     """The address of the connected peer. Raises `ConnectionError` if not connected."""
+//|
+STATIC mp_obj_t bleio_connection_get_address(mp_obj_t self_in) {
+    bleio_connection_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+    bleio_connection_ensure_connected(self);
+
+    return common_hal_bleio_connection_get_address(self);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(bleio_connection_get_address_obj, bleio_connection_get_address);
+
+const mp_obj_property_t bleio_connection_address_obj = {
+    .base.type = &mp_type_property,
+    .proxy = { (mp_obj_t)&bleio_connection_get_address_obj,
+               MP_ROM_NONE,
+               MP_ROM_NONE },
+};
+
 //|     connected: bool
 //|     """True if connected to the remote peer."""
 //|
@@ -256,6 +275,7 @@ STATIC const mp_rom_map_elem_t bleio_connection_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_discover_remote_services), MP_ROM_PTR(&bleio_connection_discover_remote_services_obj) },
 
     // Properties
+    { MP_ROM_QSTR(MP_QSTR_address),             MP_ROM_PTR(&bleio_connection_address_obj) },
     { MP_ROM_QSTR(MP_QSTR_connected),           MP_ROM_PTR(&bleio_connection_connected_obj) },
     { MP_ROM_QSTR(MP_QSTR_paired),              MP_ROM_PTR(&bleio_connection_paired_obj) },
     { MP_ROM_QSTR(MP_QSTR_connection_interval), MP_ROM_PTR(&bleio_connection_connection_interval_obj) },

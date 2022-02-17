@@ -74,6 +74,7 @@ typedef struct {
     // Time of setting do_bond_ccds: we delay a bit to consolidate multiple CCCD changes
     // into one write. Time is currently in ticks_ms.
     uint64_t do_bond_cccds_request_time;
+    ble_gap_addr_t peer_addr;
 } bleio_connection_internal_t;
 
 typedef struct {

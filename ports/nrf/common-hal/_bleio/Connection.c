@@ -42,6 +42,7 @@
 #include "py/runtime.h"
 #include "shared-bindings/_bleio/__init__.h"
 #include "shared-bindings/_bleio/Adapter.h"
+#include "shared-bindings/_bleio/Address.h"
 #include "shared-bindings/_bleio/Attribute.h"
 #include "shared-bindings/_bleio/Characteristic.h"
 #include "shared-bindings/_bleio/Service.h"
@@ -333,6 +334,19 @@ void bleio_connection_clear(bleio_connection_internal_t *self) {
     self->pair_status = PAIR_NOT_PAIRED;
     self->is_central = false;
     bonding_clear_keys(&self->bonding_keys);
+}
+
+mp_obj_t common_hal_bleio_connection_get_address(bleio_connection_obj_t *self) {
+    if (self->connection == NULL) {
+        return mp_const_none;
+    }
+
+    bleio_address_obj_t *address = m_new_obj(bleio_address_obj_t);
+    address->base.type = &bleio_address_type;
+
+    common_hal_bleio_address_construct(
+        address, self->connection->peer_addr.addr, self->connection->peer_addr.addr_type);
+    return address;
 }
 
 bool common_hal_bleio_connection_get_paired(bleio_connection_obj_t *self) {

@@ -264,6 +264,7 @@ STATIC bool adapter_on_ble_evt(ble_evt_t *ble_evt, void *self_in) {
             connection->connection_obj = mp_const_none;
             connection->pair_status = PAIR_NOT_PAIRED;
             connection->mtu = 0;
+            memcpy(&connection->peer_addr, &connected->peer_addr, sizeof(ble_gap_addr_t));
 
             ble_drv_add_event_handler_entry(&connection->handler_entry, connection_on_ble_evt, connection);
             self->connection_objs = NULL;
