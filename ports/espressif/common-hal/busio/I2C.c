@@ -29,6 +29,7 @@
 #include "py/runtime.h"
 
 #include "components/driver/include/driver/i2c.h"
+#include "hal/i2c_ll.h"
 
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
@@ -117,6 +118,9 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
         }
     }
 
+    // Clock Stretching Timeout: 20b:esp32, 5b:esp32-c3, 24b:esp32-s2 (from Arduino)
+    i2c_set_timeout(self->i2c_num, I2C_LL_MAX_TIMEOUT);
+
     claim_pin(sda);
     claim_pin(scl);
 }
@@ -140,16 +144,20 @@ void common_hal_busio_i2c_deinit(busio_i2c_obj_t *self) {
 
 static esp_err_t i2c_zero_length_write(busio_i2c_obj_t *self, uint8_t addr, TickType_t timeout) {
     // i2c_master_write_to_device() won't do zero-length writes, so we do it by hand.
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    uint8_t cmd_buffer[I2C_LINK_RECOMMENDED_SIZE(1)] = { 0 };
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create_static(cmd_buffer, I2C_LINK_RECOMMENDED_SIZE(1));
+
     i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, addr << 1, true);
+    i2c_master_write_byte(cmd, addr << 1 | I2C_MASTER_WRITE, true);
     i2c_master_stop(cmd);
     esp_err_t result = i2c_master_cmd_begin(self->i2c_num, cmd, timeout);
-    i2c_cmd_link_delete(cmd);
+    i2c_cmd_link_delete_static(cmd);
+
     return result;
 }
 
 bool common_hal_busio_i2c_probe(busio_i2c_obj_t *self, uint8_t addr) {
+    // Use a short timeout to avoid probe() stalling for a long time.
     esp_err_t result = i2c_zero_length_write(self, addr, 1);
     return result == ESP_OK;
 }
