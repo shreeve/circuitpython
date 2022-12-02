@@ -420,9 +420,75 @@ endif
 esp-idf-stamp: $(BUILD)/esp-idf/config/sdkconfig.h
 	$(Q)ninja -C $(BUILD)/esp-idf $(IDF_CMAKE_TARGETS)
 
+##############################################################################################################
+# The flag additions below were added by hand to make our builds match the automated CMake builds more closely.
+
+# See esp-idf/components/newlib/component.mk
+#
+# Forces the linker to include heap, syscalls, pthread, and assert from the newlib component
+# instead of the implementations provided by the newlib library.
+ADD_LD_FLAGS += -u newlib_include_heap_impl
+ADD_LD_FLAGS += -u newlib_include_syscalls_impl
+ADD_LD_FLAGS += -u newlib_include_pthread_impl
+ADD_LD_FLAGS += -u newlib_include_assert_impl
+
+# Force linking UBSAN hooks. If UBSAN is not enabled, the hooks will ultimately be removed
+# due to -ffunction-sections -Wl,--gc-sections options.
+# See
+ADD_LD_FLAGS += -u __ubsan_include
+
+# Note this fix was first discovered and added in https://github.com/adafruit/circuitpython/pull/7280
+#
+# See esp-idf/components/esp_system/component.mk
+#
+#ld_include_highint_hdl is added as an undefined symbol because otherwise the
+#linker will ignore highint_hdl.S as it has no other files depending on any
+#symbols in it.
+ADD_LD_FLAGS += -u ld_include_highint_hdl
+
+# See esp-idf/components/esp_system/CMakeLists.txt and component.mk
+#
+# Force linking UBSAN hooks. If UBSAN is not enabled, the hooks will ultimately be removed
+# due to -ffunction-sections -Wl,--gc-sections options.
+ADD_LD_FLAGS += -u __ubsan_include
+
+# See esp-idf/components/esp_phy/CMakeLists.txt
+#
+# Override functions in PHY lib with the functions in 'phy_override.c'
+ADD_LD_FLAGS += -u include_esp_phy_override
+
+# See esp-idf/components/pthread/CMakelists.txt and component.mk
+#
+# Forces the linker to include pthread implementation from this component,
+# instead of the weak implementations provided by libgcc.
+ADD_LD_FLAGS += -u pthread_include_pthread_impl
+ADD_LD_FLAGS += -u pthread_include_pthread_cond_impl
+ADD_LD_FLAGS += -u pthread_include_pthread_local_storage_impl
+ADD_LD_FLAGS += -u pthread_include_pthread_rwlock_impl
+
+# See esp-idf/components/cxx/component.mk
+#
+# Mark __cxa_guard_dummy as undefined so that implementation of static guards
+# is taken from cxx_guards.o instead of libstdc++.a
+ADD_LD_FLAGS_LAST += -u __cxa_guard_dummy
+
+# See esp-idf/components/cxx/component.mk
+#
+# CONFIG_COMPILER_CXX_EXCEPTIONS is never defined for CircuitPython builds, it appears
+ifndef CONFIG_COMPILER_CXX_EXCEPTIONS
+# If exceptions are disabled, ensure our fatal exception
+# hooks are preferentially linked over libstdc++ which
+# has full exception support
+WRAP_FUNCTIONS = _Unwind_SetEnableExceptionFdeSorting __register_frame_info_bases __register_frame_info __register_frame __register_frame_info_table_bases __register_frame_info_table __register_frame_table __deregister_frame_info_bases __deregister_frame_info _Unwind_Find_FDE _Unwind_GetGR _Unwind_GetCFA _Unwind_GetIP _Unwind_GetIPInfo _Unwind_GetRegionStart _Unwind_GetDataRelBase _Unwind_GetTextRelBase _Unwind_SetIP _Unwind_SetGR _Unwind_GetLanguageSpecificData _Unwind_FindEnclosingFunction _Unwind_Resume _Unwind_RaiseException _Unwind_DeleteException _Unwind_ForcedUnwind _Unwind_Resume_or_Rethrow _Unwind_Backtrace __cxa_call_unexpected __gxx_personality_v0
+WRAP_ARGUMENT := -Wl,--wrap=
+
+ADD_LDFLAGS_FIRST = $(addprefix $(WRAP_ARGUMENT),$(WRAP_FUNCTIONS))
+ADD_LDFLAGS_LAST += -u __cxx_fatal_exception
+endif # CONFIG_COMPILER_CXX_EXCEPTIONS
+
 $(BUILD)/firmware.elf: $(OBJ) | esp-idf-stamp
 	$(STEPECHO) "LINK $@"
-	$(Q)$(CC) -o $@ $(LDFLAGS) $^ -Wl,--start-group $(ESP_IDF_COMPONENTS_EXPANDED) $(BINARY_BLOBS) $(MBEDTLS_COMPONENTS_LINK_EXPANDED) $(BUILD)/esp-idf/esp-idf/newlib/libnewlib.a  -Wl,--end-group -u newlib_include_pthread_impl -u ld_include_highint_hdl -Wl,--start-group $(LIBS) -Wl,--end-group $(BUILD)/esp-idf/esp-idf/pthread/libpthread.a  -u __cxx_fatal_exception
+	$(Q)$(CC) -o $@ $(ADD_LD_FLAGS_FIRST) $(LDFLAGS) $^ -Wl,--start-group $(ESP_IDF_COMPONENTS_EXPANDED) $(BINARY_BLOBS) $(MBEDTLS_COMPONENTS_LINK_EXPANDED) $(BUILD)/esp-idf/esp-idf/newlib/libnewlib.a $(ADD_LD_FLAGS) -Wl,--end-group -u start_app -Wl,--start-group $(LIBS) -Wl,--end-group $(BUILD)/esp-idf/esp-idf/pthread/libpthread.a  $(ADD_LDFLAGS_LAST)
 
 $(BUILD)/circuitpython-firmware.bin: $(BUILD)/firmware.elf | tools/build_memory_info.py
 	$(STEPECHO) "Create $@"
