@@ -35,7 +35,8 @@
 
 #if defined(CIRCUITPY_CONSOLE_UART)
 // static LPUART_Type *uart_instance = LPUART1; // evk
-static LPUART_Type *uart_instance = LPUART4; // feather 1011
+// static LPUART_Type *uart_instance = LPUART4; // feather 1011
+static LPUART_Type *uart_instance = LPUART1; // metro 1011  NEWNEWNEWNEW
 // static LPUART_Type *uart_instance = LPUART2; // feather 1062
 static uint32_t UartSrcFreq(void) {
     uint32_t freq;
@@ -87,4 +88,25 @@ void port_serial_write_substring(const char *text, uint32_t len) {
 
     LPUART_WriteBlocking(uart_instance, (uint8_t *)text, len);
 }
+
+#include "py/mpprint.h"
+#include <stdarg.h>
+int mp_vprintf(const mp_print_t *print, const char *fmt, va_list args);
+
+static void debug_print_strn(void *env, const char *str, size_t len) {
+    (void)env;
+    port_serial_write_substring(str, len);
+}
+
+const mp_print_t mp_debug_print = {NULL, debug_print_strn};
+
+int debug_uart_printf(const char *fmt, ...);
+int debug_uart_printf(const char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    int ret = mp_vprintf(&mp_debug_print, fmt, ap);
+    va_end(ap);
+    return ret;
+}
+
 #endif // CIRCUITPY_CONSOLE_UART
