@@ -446,12 +446,6 @@ ADD_LD_FLAGS += -u __ubsan_include
 #symbols in it.
 ADD_LD_FLAGS += -u ld_include_highint_hdl
 
-# See esp-idf/components/esp_system/CMakeLists.txt and component.mk
-#
-# Force linking UBSAN hooks. If UBSAN is not enabled, the hooks will ultimately be removed
-# due to -ffunction-sections -Wl,--gc-sections options.
-ADD_LD_FLAGS += -u __ubsan_include
-
 # See esp-idf/components/esp_phy/CMakeLists.txt
 #
 # Override functions in PHY lib with the functions in 'phy_override.c'
