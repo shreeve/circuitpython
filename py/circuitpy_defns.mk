@@ -398,16 +398,6 @@ endif
 
 # All possible sources are listed here, and are filtered by SRC_PATTERNS in SRC_COMMON_HAL
 SRC_COMMON_HAL_ALL = \
-	_bleio/Adapter.c \
-	_bleio/Attribute.c \
-	_bleio/Characteristic.c \
-	_bleio/CharacteristicBuffer.c \
-	_bleio/Connection.c \
-	_bleio/Descriptor.c \
-	_bleio/PacketBuffer.c \
-	_bleio/Service.c \
-	_bleio/UUID.c \
-	_bleio/__init__.c \
 	_pew/PewPew.c \
 	_pew/__init__.c \
 	alarm/SleepMemory.c \
@@ -501,11 +491,32 @@ SRC_COMMON_HAL_ALL = \
 	wifi/ScannedNetworks.c \
 	wifi/__init__.c \
 
-ifeq ($(CIRCUITPY_BLEIO_HCI),1)
-# Helper code for _bleio HCI.
+# HCI _bleio is in devices/ble_hci, and native _bleio is in ports/*/common-hal. Choose the right
+# set of sources depending on CIRCUITPY_BLEIO_HCI.
+ifeq ($(CIRCUITPY_BLEIO),1)
+ifeq ($(CIRCUITPY_BLEIO_HCI),0)
+BLEIO_SRC_LOCATION =
+else
+BLEIO_SRC_LOCATION = devices/ble_hci/common-hal/
+INC += -I$(TOP)/devices/ble_hci
+DEVICES_MODULES += $(TOP)/devices/ble_hci
+# Extra helper code for _bleio HCI.
 SRC_C += \
-	common-hal/_bleio/att.c \
-	common-hal/_bleio/hci.c \
+	$(BLEIO_SRC_LOCATION)_bleio/att.c \
+	$(BLEIO_SRC_LOCATION)_bleio/hci.c \
+
+endif
+SRC_COMMON_HAL_ALL += \
+	$(BLEIO_SRC_LOCATION)_bleio/Adapter.c \
+	$(BLEIO_SRC_LOCATION)_bleio/Attribute.c \
+	$(BLEIO_SRC_LOCATION)_bleio/Characteristic.c \
+	$(BLEIO_SRC_LOCATION)_bleio/CharacteristicBuffer.c \
+	$(BLEIO_SRC_LOCATION)_bleio/Connection.c \
+	$(BLEIO_SRC_LOCATION)_bleio/Descriptor.c \
+	$(BLEIO_SRC_LOCATION)_bleio/PacketBuffer.c \
+	$(BLEIO_SRC_LOCATION)_bleio/Service.c \
+	$(BLEIO_SRC_LOCATION)_bleio/UUID.c \
+	$(BLEIO_SRC_LOCATION)_bleio/__init__.c \
 
 endif
 
@@ -684,13 +695,6 @@ else
 SRC_SHARED_MODULE_ALL += \
 	touchio/TouchIn.c \
 	touchio/__init__.c
-endif
-
-# If supporting _bleio via HCI, make devices/ble_hci/common-hal/_bleio be includable,
-# and use C source files in devices/ble_hci/common-hal.
-ifeq ($(CIRCUITPY_BLEIO_HCI),1)
-INC += -I$(TOP)/devices/ble_hci
-DEVICES_MODULES += $(TOP)/devices/ble_hci
 endif
 
 ifeq ($(CIRCUITPY_AUDIOMP3),1)

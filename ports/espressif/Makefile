@@ -248,7 +248,9 @@ SRC_C += lib/tinyusb/src/portable/espressif/esp32sx/dcd_esp32sx.c
 endif
 
 ifneq ($(CIRCUITPY_BLEIO),0)
+ifeq ($(CIRCUITPY_BLEIO_HCI),0)
 SRC_C += common-hal/_bleio/ble_events.c
+endif
 endif
 
 ifneq ($(CIRCUITPY_ESPCAMERA),0)
@@ -342,7 +344,9 @@ endif
 
 SDKCONFIGS := esp-idf-config/sdkconfig.defaults;$(DEBUG_SDKCONFIG);$(FLASH_SDKCONFIG);$(TARGET_SDKCONFIG);boards/$(BOARD)/sdkconfig
 ifneq ($(CIRCUITPY_BLEIO),0)
+ifeq ($(CIRCUITPY_BLEIO_HCI),0)
 	SDKCONFIGS := esp-idf-config/sdkconfig-ble.defaults;$(SDKCONFIGS)
+endif
 endif
 # create the config headers
 .PHONY: do-sdkconfig
@@ -382,9 +386,11 @@ endif
 
 ESP_IDF_COMPONENTS_LINK = $(IDF_TARGET_ARCH) app_update bootloader_support driver efuse esp_adc_cal esp_common esp_event esp_hw_support esp_ipc esp_netif esp_pm esp_phy esp_ringbuf esp_rom esp_system esp_timer esp-tls esp_wifi freertos hal heap log lwip mbedtls mdns newlib nvs_flash pthread soc spi_flash vfs wpa_supplicant
 ifneq ($(CIRCUITPY_BLEIO),0)
+ifeq ($(CIRCUITPY_BLE_HCI),0)
 	ESP_IDF_COMPONENTS_LINK += bt
 	BINARY_BLOBS += esp-idf/components/esp_phy/lib/$(IDF_TARGET)/libbtbb.a \
 	                esp-idf/components/bt/controller/lib_esp32c3_family/$(IDF_TARGET)/libbtdm_app.a
+endif
 endif
 ifneq ($(CIRCUITPY_ESPULP),0)
 	ESP_IDF_COMPONENTS_LINK += ulp

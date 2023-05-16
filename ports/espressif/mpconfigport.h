@@ -37,7 +37,7 @@
 
 #include "py/circuitpy_mpconfig.h"
 
-#if CIRCUITPY_BLEIO
+#if CIRCUITPY_BLEIO && !CIRCUITPY_BLEIO_HCI
 #define BLEIO_ROOT_POINTERS struct ble_event_handler_entry *ble_event_handler_entries;
 #else
 #define BLEIO_ROOT_POINTERS
