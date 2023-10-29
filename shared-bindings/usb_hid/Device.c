@@ -62,12 +62,12 @@
 //|         ``report_ids``, ``in_report_lengths``, and ``out_report_lengths`` must all have the
 //|         same number of elements.
 //|
-//|         Here is an example of a `Device` with a descriptor that specifies two report IDs, 3 and 4.
+//|         Here is an example of a `Device` with a report descriptor that specifies two report IDs, 3 and 4.
 //|         Report ID 3 sends an IN report of length 5, and receives an OUT report of length 6.
 //|         Report ID 4 sends an IN report of length 2, and does not receive an OUT report::
 //|
 //|             device = usb_hid.Device(
-//|                 descriptor=b"...",         # Omitted for brevity.
+//|                 report_descriptor=b"...",         # Omitted for brevity.
 //|                 report_ids=(3, 4),
 //|                 in_report_lengths=(5, 2),
 //|                 out_report_lengths=(6, 0),
