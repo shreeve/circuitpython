@@ -129,7 +129,14 @@ mp_uint_t supervisor_flash_read_blocks(uint8_t *dest, uint32_t block_num, uint32
     return 0; // success
 }
 
+#include "supervisor/shared/tick.h"
+static uint32_t last_msecs = 0;
 mp_uint_t supervisor_flash_write_blocks(const uint8_t *src, uint32_t block_num, uint32_t num_blocks) {
+    uint32_t msecs_now = supervisor_ticks_ms32();
+    uint32_t diff_msecs = msecs_now - last_msecs;
+    last_msecs = msecs_now;
+    mp_printf(&mp_plat_print, "+%d msecs: writing %d blocks starting at %d\n",
+        diff_msecs, num_blocks, block_num);
     for (size_t i = 0; i < num_blocks; i++) {
         if (!supervisor_flash_write_block(src + i * FILESYSTEM_BLOCK_SIZE, block_num + i)) {
             return 1; // error
