@@ -1082,7 +1082,7 @@ int __attribute__((used)) main(void) {
 
     // If not in safe mode turn on autoreload by default but before boot.py in case it wants to change it.
     if (get_safe_mode() == SAFE_MODE_NONE) {
-        autoreload_enable();
+///////        autoreload_enable();
     }
 
     // By default our internal flash is readonly to local python code and

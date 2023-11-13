@@ -115,6 +115,9 @@ static mp_uint_t flash_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t n
 
 static volatile bool filesystem_dirty = false;
 
+// *** FLASH WRITE INSTRUMENTATION
+static uint32_t last_msecs;
+
 static mp_uint_t flash_write_blocks(const uint8_t *src, uint32_t block_num, uint32_t num_blocks) {
     if (block_num == 0) {
         if (num_blocks > 1) {
@@ -128,6 +131,14 @@ static mp_uint_t flash_write_blocks(const uint8_t *src, uint32_t block_num, uint
             supervisor_enable_tick();
             filesystem_dirty = true;
         }
+
+        // *** FLASH WRITE INSTRUMENTATION
+        uint32_t msecs_now = supervisor_ticks_ms32();
+        uint32_t diff_msecs = msecs_now - last_msecs;
+        last_msecs = msecs_now;
+        mp_printf(&mp_plat_print, "+%d msecs: writing %d blocks starting at %d\n",
+            diff_msecs, num_blocks, block_num);
+        // *** END
         return supervisor_flash_write_blocks(src, block_num - PART1_START_BLOCK, num_blocks);
     }
 }
